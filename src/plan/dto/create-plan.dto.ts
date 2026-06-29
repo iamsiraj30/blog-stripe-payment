@@ -17,7 +17,11 @@ export class CreatePlanDto {
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty({ example: 'Plan allowing up to 10 posts.', description: 'The details of the subscription tier', required: false })
+  @ApiProperty({
+    example: 'Plan allowing up to 10 posts.',
+    description: 'The details of the subscription tier',
+    required: false,
+  })
   @IsString()
   @IsOptional()
   description?: string;
@@ -27,16 +31,28 @@ export class CreatePlanDto {
   @IsPositive()
   price: number;
 
-  @ApiProperty({ example: 'USD', description: 'Three-letter currency code', default: 'USD', required: false })
+  @ApiProperty({
+    example: 'USD',
+    description: 'Three-letter currency code',
+    default: 'USD',
+    required: false,
+  })
   @IsString()
   @IsOptional()
   currency?: string;
 
-  @ApiProperty({ enum: BillingCycle, example: BillingCycle.MONTHLY, description: 'Billing frequency' })
+  @ApiProperty({
+    enum: BillingCycle,
+    example: BillingCycle.MONTHLY,
+    description: 'Billing frequency',
+  })
   @IsEnum(BillingCycle)
   billingCycle: BillingCycle;
 
-  @ApiProperty({ example: 10, description: 'Maximum number of posts allowed under this plan' })
+  @ApiProperty({
+    example: 10,
+    description: 'Maximum number of posts allowed under this plan',
+  })
   @IsInt()
   @Min(1)
   postLimit: number;

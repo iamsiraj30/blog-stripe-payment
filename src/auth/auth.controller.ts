@@ -17,7 +17,12 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -26,7 +31,10 @@ export class AuthController {
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
-  @ApiResponse({ status: 201, description: 'User successfully registered. Verification OTP sent.' })
+  @ApiResponse({
+    status: 201,
+    description: 'User successfully registered. Verification OTP sent.',
+  })
   @ApiResponse({ status: 400, description: 'Invalid input data.' })
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
@@ -53,7 +61,10 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login user and receive JWT tokens' })
-  @ApiResponse({ status: 200, description: 'Access token and Refresh token successfully issued.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Access token and Refresh token successfully issued.',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized credentials.' })
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
@@ -62,7 +73,10 @@ export class AuthController {
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Request password reset OTP' })
-  @ApiResponse({ status: 200, description: 'Password reset OTP sent to user email.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Password reset OTP sent to user email.',
+  })
   @ApiResponse({ status: 404, description: 'Email address not found.' })
   forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto);
@@ -80,13 +94,19 @@ export class AuthController {
   @Post('refresh-token')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh authentication access token' })
-  @ApiResponse({ status: 200, description: 'New access token successfully issued.' })
-  @ApiResponse({ status: 401, description: 'Invalid or expired refresh token.' })
+  @ApiResponse({
+    status: 200,
+    description: 'New access token successfully issued.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid or expired refresh token.',
+  })
   refreshToken(@Body() dto: RefreshTokenDto) {
     return this.authService.refreshToken(dto);
   }
 
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   @ApiOperation({ summary: 'Get current user profile data' })

@@ -8,6 +8,7 @@ import { MailModule } from './mail/mail.module';
 import { PostModule } from './post/post.module';
 import { PlanModule } from './plan/plan.module';
 import { PaymentModule } from './payment/payment.module';
+import { SubscriptionModule } from './subscription/subscription.module';
 
 @Module({
   imports: [
@@ -20,9 +21,9 @@ import { PaymentModule } from './payment/payment.module';
     PostModule,
     PlanModule,
     PaymentModule,
+    SubscriptionModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
-

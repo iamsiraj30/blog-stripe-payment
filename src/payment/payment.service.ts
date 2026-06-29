@@ -97,6 +97,38 @@ export class PaymentService {
     }
   }
 
+  // ── Session Verification (Fallback) ──────────────────────
+
+  async verifySession(sessionId: string) {
+    let session: Stripe.Checkout.Session;
+    try {
+      session = await this.stripe.checkout.sessions.retrieve(sessionId);
+    } catch (error: any) {
+      throw new BadRequestException(
+        `Failed to retrieve checkout session: ${error.message}`,
+      );
+    }
+
+    if (session.payment_status !== 'paid') {
+      throw new BadRequestException(
+        'Payment has not been completed for this session',
+      );
+    }
+
+    // Process checkout session completion
+    await this.handleCheckoutCompleted(session);
+
+    const userId = session.metadata?.userId;
+    if (!userId) {
+      throw new BadRequestException('Invalid session metadata');
+    }
+
+    return this.prisma.subscription.findUnique({
+      where: { userId },
+      include: { plan: true },
+    });
+  }
+
   // ── Webhook ──────────────────────────────────────────────
 
   async handleWebhook(rawBody: Buffer, signature: string) {
@@ -116,21 +148,15 @@ export class PaymentService {
 
     switch (event.type) {
       case 'checkout.session.completed':
-        await this.handleCheckoutCompleted(
-          event.data.object as Stripe.Checkout.Session,
-        );
+        await this.handleCheckoutCompleted(event.data.object);
         break;
 
       case 'invoice.payment_succeeded':
-        await this.handleInvoicePaymentSucceeded(
-          event.data.object as Stripe.Invoice,
-        );
+        await this.handleInvoicePaymentSucceeded(event.data.object);
         break;
 
       case 'customer.subscription.deleted':
-        await this.handleSubscriptionDeleted(
-          event.data.object as Stripe.Subscription,
-        );
+        await this.handleSubscriptionDeleted(event.data.object);
         break;
 
       default:

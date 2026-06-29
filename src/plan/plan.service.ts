@@ -26,7 +26,9 @@ export class PlanService {
 
   // ── helpers ──────────────────────────────────────────────
 
-  private billingInterval(cycle: BillingCycle): Stripe.PriceCreateParams.Recurring.Interval {
+  private billingInterval(
+    cycle: BillingCycle,
+  ): Stripe.PriceCreateParams.Recurring.Interval {
     return cycle === BillingCycle.MONTHLY ? 'month' : 'year';
   }
 

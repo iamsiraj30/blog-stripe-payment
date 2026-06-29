@@ -153,7 +153,7 @@ export class AuthService {
     }
 
     const payload = { sub: user.id, email: user.email, role: user.role };
-    
+
     const accessToken = this.jwtService.sign(payload, {
       secret: process.env.JWT_ACCESS_SECRET,
       expiresIn: (process.env.JWT_ACCESS_EXPIRES_IN || '1d') as any,
@@ -239,7 +239,8 @@ export class AuthService {
     });
 
     return {
-      message: 'Password reset successful. You can now log in with your new password.',
+      message:
+        'Password reset successful. You can now log in with your new password.',
     };
   }
 

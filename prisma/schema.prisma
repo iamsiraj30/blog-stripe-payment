@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum PostStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  PENDING
+}
+
+enum BillingCycle {
+  MONTHLY
+  YEARLY
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id                       String        @id @default(uuid())
+  name                     String
+  email                    String        @unique
+  password                 String
+  isVerified               Boolean       @default(false)
+  refreshToken             String?
+  profileImg               String?
+  otp                      Int?
+  otpExpireAt              DateTime?
+  resetPasswordOtp         Int?
+  resetPasswordOtpExpireAt DateTime?
+  role                     Role          @default(USER)
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @updatedAt
+  posts                    Post[]
+  subscription             Subscription?
+  payments                 Payment[]
+
+  @@map("users")
+}
+
+model Post {
+  id          String     @id @default(uuid())
+  title       String
+  slug        String     @unique
+  description String?
+  status      PostStatus @default(ACTIVE)
+  authorId    String
+  author      User       @relation(fields: [authorId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("posts")
+}
+
+model Plan {
+  id            String         @id @default(uuid())
+  name          String         @unique
+  description   String?
+  price         Decimal        @db.Decimal(10, 2)
+  currency      String         @default("USD")
+  billingCycle  BillingCycle
+  postLimit     Int
+  stripePriceId String         @unique
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+model Subscription {
+  id                   String             @id @default(uuid())
+  userId               String             @unique
+  user                 User               @relation(fields: [userId], references: [id])
+  planId               String
+  plan                 Plan               @relation(fields: [planId], references: [id])
+  status               SubscriptionStatus @default(PENDING)
+  stripeCustomerId     String?
+  stripeSubscriptionId String?            @unique
+  startsAt             DateTime
+  expiresAt            DateTime
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  payments             Payment[]
+
+  @@map("subscriptions")
+}
+
+model Payment {
+  id                    String        @id @default(uuid())
+  userId                String
+  user                  User          @relation(fields: [userId], references: [id])
+  subscriptionId        String?
+  subscription          Subscription? @relation(fields: [subscriptionId], references: [id])
+  amount                Decimal       @db.Decimal(10, 2)
+  currency              String        @default("USD")
+  status                PaymentStatus @default(PENDING)
+  stripePaymentIntentId String?       @unique
+  stripeSessionId       String?       @unique
+  paidAt                DateTime?
+  createdAt             DateTime      @default(now())
+
+  @@map("payments")
+}

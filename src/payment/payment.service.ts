@@ -8,7 +8,6 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   BillingCycle,
-  SubscriptionStatus,
   PaymentStatus,
 } from '@prisma/client';
 import Stripe from 'stripe';
@@ -39,21 +38,14 @@ export class PaymentService {
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { subscription: true },
     });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    // Reuse existing Stripe customer if one exists
-    let customerId: string | undefined;
-    if (user.subscription?.stripeCustomerId) {
-      customerId = user.subscription.stripeCustomerId;
-    }
-
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
-      mode: 'subscription',
+      mode: 'payment',
       payment_method_types: ['card'],
       line_items: [
         {
@@ -69,11 +61,7 @@ export class PaymentService {
       cancel_url: `${this.config.get<string>('CLIENT_URL') || 'http://localhost:3000'}/payment/cancel`,
     };
 
-    if (customerId) {
-      sessionParams.customer = customerId;
-    } else {
-      sessionParams.customer_email = user.email;
-    }
+    sessionParams.customer_email = user.email;
 
     try {
       const session = await this.stripe.checkout.sessions.create(sessionParams);
@@ -123,9 +111,8 @@ export class PaymentService {
       throw new BadRequestException('Invalid session metadata');
     }
 
-    return this.prisma.subscription.findUnique({
-      where: { userId },
-      include: { plan: true },
+    return this.prisma.payment.findFirst({
+      where: { stripeSessionId: sessionId },
     });
   }
 
@@ -148,15 +135,7 @@ export class PaymentService {
 
     switch (event.type) {
       case 'checkout.session.completed':
-        await this.handleCheckoutCompleted(event.data.object);
-        break;
-
-      case 'invoice.payment_succeeded':
-        await this.handleInvoicePaymentSucceeded(event.data.object);
-        break;
-
-      case 'customer.subscription.deleted':
-        await this.handleSubscriptionDeleted(event.data.object);
+        await this.handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
         break;
 
       default:
@@ -178,102 +157,15 @@ export class PaymentService {
     if (!plan) return;
 
     const now = new Date();
-    const expiresAt = new Date(now);
-    if (plan.billingCycle === BillingCycle.MONTHLY) {
-      expiresAt.setMonth(expiresAt.getMonth() + 1);
-    } else {
-      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-    }
-
-    // Upsert the subscription
-    await this.prisma.subscription.upsert({
-      where: { userId },
-      create: {
-        userId,
-        planId,
-        status: SubscriptionStatus.ACTIVE,
-        stripeCustomerId: session.customer as string,
-        stripeSubscriptionId: session.subscription as string,
-        startsAt: now,
-        expiresAt,
-      },
-      update: {
-        planId,
-        status: SubscriptionStatus.ACTIVE,
-        stripeCustomerId: session.customer as string,
-        stripeSubscriptionId: session.subscription as string,
-        startsAt: now,
-        expiresAt,
-      },
-    });
 
     // Update the pending payment record
-    const sub = await this.prisma.subscription.findUnique({
-      where: { userId },
-    });
-
     await this.prisma.payment.updateMany({
       where: { stripeSessionId: session.id },
       data: {
         status: PaymentStatus.SUCCESS,
         stripePaymentIntentId: session.payment_intent as string,
         paidAt: now,
-        subscriptionId: sub?.id,
       },
-    });
-  }
-
-  private async handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
-    // Access subscription id from the invoice object
-    const stripeSubscriptionId = (invoice as any).subscription as string;
-    if (!stripeSubscriptionId) return;
-
-    const subscription = await this.prisma.subscription.findUnique({
-      where: { stripeSubscriptionId },
-      include: { plan: true },
-    });
-    if (!subscription) return;
-
-    // Extend expiry
-    const newExpiry = new Date(subscription.expiresAt);
-    if (subscription.plan.billingCycle === BillingCycle.MONTHLY) {
-      newExpiry.setMonth(newExpiry.getMonth() + 1);
-    } else {
-      newExpiry.setFullYear(newExpiry.getFullYear() + 1);
-    }
-
-    await this.prisma.subscription.update({
-      where: { id: subscription.id },
-      data: {
-        status: SubscriptionStatus.ACTIVE,
-        expiresAt: newExpiry,
-      },
-    });
-
-    // Log renewal payment
-    const paymentIntentId = (invoice as any).payment_intent as string;
-    await this.prisma.payment.create({
-      data: {
-        userId: subscription.userId,
-        subscriptionId: subscription.id,
-        amount: subscription.plan.price,
-        currency: subscription.plan.currency,
-        status: PaymentStatus.SUCCESS,
-        stripePaymentIntentId: paymentIntentId || undefined,
-        paidAt: new Date(),
-      },
-    });
-  }
-
-  private async handleSubscriptionDeleted(sub: Stripe.Subscription) {
-    const subscription = await this.prisma.subscription.findUnique({
-      where: { stripeSubscriptionId: sub.id },
-    });
-    if (!subscription) return;
-
-    await this.prisma.subscription.update({
-      where: { id: subscription.id },
-      data: { status: SubscriptionStatus.CANCELLED },
     });
   }
 }

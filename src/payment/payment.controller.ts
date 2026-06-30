@@ -27,7 +27,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
-@ApiTags('Payments & Subscriptions')
+@ApiTags('Payments')
 @Controller('payments')
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
@@ -69,32 +69,27 @@ export class PaymentController {
   @Post('verify')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Verify a Stripe Checkout session and activate subscription',
+    summary: 'Verify a Stripe Checkout session',
     description:
       'Call this endpoint from the payment success page, passing the `session_id` ' +
       'from the redirect URL query param. It confirms the payment with Stripe, then ' +
-      "creates or updates the user's subscription record and returns the active subscription.",
+      "updates the payment record and returns the payment details.",
   })
   @ApiBody({ type: VerifyPaymentDto })
   @ApiResponse({
     status: 200,
-    description: 'Payment verified. Returns the activated subscription.',
+    description: 'Payment verified. Returns the payment details.',
     schema: {
       example: {
         id: 'f4e2a1c0-1234-5678-abcd-ef0123456789',
         userId: 'a1b2c3d4-...',
-        planId: 'e5f6g7h8-...',
-        status: 'ACTIVE',
-        stripeCustomerId: 'cus_XXXXXXXX',
-        stripeSubscriptionId: 'sub_XXXXXXXX',
-        startsAt: '2026-06-29T00:00:00.000Z',
-        expiresAt: '2026-07-29T00:00:00.000Z',
-        plan: {
-          id: 'e5f6g7h8-...',
-          name: 'Premium Plan',
-          price: '9.99',
-          billingCycle: 'MONTHLY',
-        },
+        amount: '9.99',
+        currency: 'USD',
+        status: 'SUCCESS',
+        stripePaymentIntentId: 'pi_XXXXXXXX',
+        stripeSessionId: 'cs_XXXXXXXX',
+        paidAt: '2026-06-29T00:00:00.000Z',
+        createdAt: '2026-06-29T00:00:00.000Z',
       },
     },
   })
@@ -114,8 +109,7 @@ export class PaymentController {
   @ApiOperation({
     summary: 'Stripe Webhook receiver',
     description:
-      'Receives and processes real-time Stripe events (e.g. `checkout.session.completed`, ' +
-      '`invoice.payment_succeeded`, `customer.subscription.deleted`). ' +
+      'Receives and processes real-time Stripe events (e.g. `checkout.session.completed`). ' +
       '**Do not call this manually.** Configure this URL in your Stripe Dashboard webhook settings. ' +
       'Requires the raw request body and the `stripe-signature` header for signature verification.',
   })

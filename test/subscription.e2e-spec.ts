@@ -177,7 +177,7 @@ describe('SubscriptionController (e2e)', () => {
       const dbSub = await prisma.subscription.findUnique({
         where: { id: subscriptionId },
       });
-      expect(dbSub.status).toBe(SubscriptionStatus.CANCELLED);
+      expect(dbSub?.status).toBe(SubscriptionStatus.CANCELLED);
     });
 
     it('should return 400 if subscription is already cancelled', () => {
@@ -270,7 +270,7 @@ describe('SubscriptionController (e2e)', () => {
         const dbSub = await prisma.subscription.findUnique({
           where: { id: subscriptionId },
         });
-        expect(dbSub.status).toBe(SubscriptionStatus.ACTIVE);
+        expect(dbSub?.status).toBe(SubscriptionStatus.ACTIVE);
       });
     });
   });

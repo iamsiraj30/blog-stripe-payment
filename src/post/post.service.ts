@@ -6,7 +6,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
-import { Role, SubscriptionStatus } from '@prisma/client';
+import { Role } from '@prisma/client';
 
 const FREE_POST_LIMIT = 5;
 
@@ -40,28 +40,20 @@ export class PostService {
   }
 
   private async enforcePostLimit(userId: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (user?.role === Role.ADMIN) {
+      return;
+    }
+
     const postCount = await this.prisma.post.count({
       where: { authorId: userId },
     });
 
-    // Check for an active subscription
-    const subscription = await this.prisma.subscription.findUnique({
-      where: { userId },
-      include: { plan: true },
-    });
-
-    let limit = FREE_POST_LIMIT;
-    if (
-      subscription &&
-      subscription.status === SubscriptionStatus.ACTIVE &&
-      subscription.expiresAt > new Date()
-    ) {
-      limit = subscription.plan.postLimit;
-    }
-
-    if (postCount >= limit) {
+    if (postCount >= FREE_POST_LIMIT) {
       throw new ForbiddenException(
-        `Post creation limit reached (${limit}). Please upgrade your plan.`,
+        `Post creation limit reached (${FREE_POST_LIMIT}).`,
       );
     }
   }

@@ -32,7 +32,7 @@ export class PlanController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @Post()
-  @ApiOperation({ summary: 'Create a subscription plan (Admin only)' })
+  @ApiOperation({ summary: 'Create a plan (Admin only)' })
   @ApiResponse({
     status: 201,
     description: 'Plan successfully created and synchronized with Stripe.',
@@ -46,7 +46,7 @@ export class PlanController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List all subscription plans' })
+  @ApiOperation({ summary: 'List all plans' })
   @ApiResponse({ status: 200, description: 'All plans successfully listed.' })
   findAll() {
     return this.planService.findAll();

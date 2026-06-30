@@ -16,12 +16,6 @@ enum PostStatus {
   INACTIVE
 }
 
-enum SubscriptionStatus {
-  ACTIVE
-  EXPIRED
-  CANCELLED
-  PENDING
-}
 
 enum BillingCycle {
   MONTHLY
@@ -51,7 +45,6 @@ model User {
   createdAt                DateTime      @default(now())
   updatedAt                DateTime      @updatedAt
   posts                    Post[]
-  subscription             Subscription?
   payments                 Payment[]
 
   @@map("users")
@@ -82,35 +75,14 @@ model Plan {
   stripePriceId String         @unique
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
-  subscriptions Subscription[]
 
   @@map("plans")
-}
-
-model Subscription {
-  id                   String             @id @default(uuid())
-  userId               String             @unique
-  user                 User               @relation(fields: [userId], references: [id])
-  planId               String
-  plan                 Plan               @relation(fields: [planId], references: [id])
-  status               SubscriptionStatus @default(PENDING)
-  stripeCustomerId     String?
-  stripeSubscriptionId String?            @unique
-  startsAt             DateTime
-  expiresAt            DateTime
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
-  payments             Payment[]
-
-  @@map("subscriptions")
 }
 
 model Payment {
   id                    String        @id @default(uuid())
   userId                String
   user                  User          @relation(fields: [userId], references: [id])
-  subscriptionId        String?
-  subscription          Subscription? @relation(fields: [subscriptionId], references: [id])
   amount                Decimal       @db.Decimal(10, 2)
   currency              String        @default("USD")
   status                PaymentStatus @default(PENDING)

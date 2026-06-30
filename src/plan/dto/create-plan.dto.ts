@@ -19,7 +19,7 @@ export class CreatePlanDto {
 
   @ApiProperty({
     example: 'Plan allowing up to 10 posts.',
-    description: 'The details of the subscription tier',
+    description: 'The details of the plan',
     required: false,
   })
   @IsString()

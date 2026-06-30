@@ -13,7 +13,7 @@ export class UpdatePlanDto {
 
   @ApiProperty({
     example: 'Updated details here.',
-    description: 'The details of the subscription tier',
+    description: 'The details of the plan',
     required: false,
   })
   @IsString()

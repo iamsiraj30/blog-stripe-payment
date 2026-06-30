@@ -8,7 +8,6 @@ import { MailModule } from './mail/mail.module';
 import { PostModule } from './post/post.module';
 import { PlanModule } from './plan/plan.module';
 import { PaymentModule } from './payment/payment.module';
-import { SubscriptionModule } from './subscription/subscription.module';
 
 @Module({
   imports: [
@@ -21,7 +20,6 @@ import { SubscriptionModule } from './subscription/subscription.module';
     PostModule,
     PlanModule,
     PaymentModule,
-    SubscriptionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -35,7 +35,7 @@ export class PostController {
   @ApiResponse({
     status: 403,
     description:
-      'Forbidden. Post creation limit reached for subscription plan.',
+      'Forbidden. Post creation limit reached.',
   })
   create(@CurrentUser('id') userId: string, @Body() dto: CreatePostDto) {
     return this.postService.create(userId, dto);
